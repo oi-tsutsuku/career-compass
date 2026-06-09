@@ -2,15 +2,21 @@
 
 大学生向けキャリア探索アプリ。性格診断ではなく、**就活に向けた現在地と次の一歩**を見える化します。
 
-## 技術スタック
-
-- **Vite** (バンドラー / 開発サーバー)
-- **chart.js** (レーダーチャート)
-- 純粋な HTML / CSS / JavaScript (フレームワークなし)
+5つの軸（自己理解・社会探索・行動性・意思決定・**深度/解像度**）でスコアを算出し、レーダーチャートと3Dマップで可視化します。
 
 ---
 
-## ローカル起動方法
+## 技術スタック
+
+- **React 18 + TypeScript**
+- **Vite 5**（バンドラー / 開発サーバー）
+- **Chart.js**（レーダーチャート）
+- **Canvas API**（等角投影3Dマップ）
+- **Vercel**（デプロイ）
+
+---
+
+## ローカル起動
 
 ```bash
 # 1. リポジトリをクローン
@@ -25,19 +31,16 @@ npm run dev
 # → http://localhost:5173 で開く
 ```
 
-### ビルド（本番用）
+### ビルド確認
 
 ```bash
-npm run build
-# → dist/ フォルダが生成される
-
-npm run preview
-# → dist/ をローカルでプレビュー
+npm run build   # tsc + vite build → dist/
+npm run preview # dist/ をローカルでプレビュー
 ```
 
 ---
 
-## GitHub Pages 公開方法
+## Vercel へのデプロイ
 
 ### 1. GitHubにリポジトリを作成
 
@@ -50,58 +53,47 @@ git remote add origin https://github.com/<your-username>/career-compass.git
 git push -u origin main
 ```
 
-### 2. GitHub Pages の設定
+### 2. Vercel でプロジェクトをインポート
 
-1. GitHubリポジトリの **Settings** タブを開く
-2. 左メニューの **Pages** をクリック
-3. **Source** を **"GitHub Actions"** に変更して保存
+1. [vercel.com/new](https://vercel.com/new) を開く
+2. GitHubリポジトリ `career-compass` を選択
+3. Framework Preset が **Vite** になっていることを確認
+4. **Deploy** をクリック
 
-### 3. 自動デプロイの確認
+以降、`main` ブランチへの push で自動デプロイされます。
 
-`main` ブランチへの push と同時に GitHub Actions が動き、  
-`https://<your-username>.github.io/career-compass/` で公開されます。
-
-> **vite.config.js の `base` について**  
-> デフォルトは `'./'`（相対パス）で動作します。  
-> もし公開URLのサブパスと一致させたい場合は `base: '/career-compass/'` に変更してください。
+> `vercel.json` に `"framework": "vite"` と SPA用リライト設定が含まれているため、追加設定は不要です。
 
 ---
 
-## GitHub Actions 設定方法
+## API連携（オプション）
 
-`.github/workflows/deploy.yml` が設定済みです。
+すべての外部API連携は **`src/api/index.ts`** にまとめています。  
+デフォルトは `demoMode: true`（APIキーがない場合に自動で有効）。
 
-| ファイル | 説明 |
-|---|---|
-| `.github/workflows/deploy.yml` | `main` push 時に自動ビルド＆デプロイ |
+### 環境変数の設定
 
-**必要なリポジトリ設定（GitHub側）:**
+`.env.local` をプロジェクトルートに作成（`.gitignore` に含まれています）：
 
-1. **Settings → Pages → Source → GitHub Actions** に設定
-2. **Settings → Actions → General → Workflow permissions** を  
-   `Read and write permissions` に設定（またはデフォルトのまま）
-
-手動で再デプロイしたい場合は  
-**Actions タブ → "Deploy to GitHub Pages" → "Run workflow"** で実行できます。
-
----
-
-## API連携を後から追加する場所
-
-すべての外部API連携は **`src/api.js`** にまとめています。
-
-### Google Sheets 連携を有効にする
-
-```js
-// src/api.js
-export const CFG = {
-  sheetsUrl: 'https://script.google.com/macros/s/XXXXX/exec',  // ← ここに設定
-  demoMode: true,  // ← false に変更するとAPIが有効になる
-  ...
-}
+```
+VITE_OPENAI_KEY=sk-XXXXXXXXXX
+VITE_SHEETS_URL=https://script.google.com/macros/s/XXXXX/exec
+VITE_OPENAI_MODEL=gpt-4o-mini
 ```
 
-**Google Apps Script 側の設定手順:**
+Vercelのダッシュボードでも同じ変数を設定してください：  
+**Project Settings → Environment Variables**
+
+### OpenAI フィードバック生成
+
+`VITE_OPENAI_KEY` を設定すると、詳細診断完了後に個別フィードバックが生成されます。  
+未設定の場合はデモ用のフィードバックテキストが表示されます。
+
+### Google Sheets 保存
+
+`VITE_SHEETS_URL` を設定すると、回答データがスプレッドシートに保存されます。
+
+**Google Apps Script 設定手順：**
 
 1. スプレッドシートを新規作成 → 拡張機能 → Apps Script
 2. 以下のコードを貼り付け
@@ -111,63 +103,26 @@ function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(Object.keys(data));   // ヘッダー行
+    sheet.appendRow(Object.keys(data));
   }
-  sheet.appendRow(Object.values(data));  // データ行
+  sheet.appendRow(Object.values(data));
   return ContentService.createTextOutput('ok');
 }
 ```
 
-3. **デプロイ → 新しいデプロイ → ウェブアプリ** で公開
+3. デプロイ → 新しいデプロイ → ウェブアプリ
 4. 実行者: **自分**、アクセス: **全員** に設定して URL を取得
-5. 取得した URL を `CFG.sheetsUrl` に設定
+5. 取得した URL を `VITE_SHEETS_URL` に設定
 
-### OpenAI API 連携を有効にする
+> ⚠️ APIキーは `.env.local` で管理し、コードに直書きしないでください。
 
-```js
-// src/api.js
-export const CFG = {
-  openaiKey: 'sk-XXXXXXXXXX',   // ← ここに設定
-  openaiModel: 'gpt-4o-mini',
-  demoMode: false,               // ← false に変更
-}
-```
+---
 
-> ⚠️ **本番環境では API キーをコードに直書きしないでください。**  
-> Vite の環境変数（`.env` ファイル + `import.meta.env.VITE_OPENAI_KEY`）と  
-> GitHub Secrets を組み合わせて管理することを推奨します。
+## プライバシー設計
 
-#### 環境変数を使う場合（推奨）
-
-1. `.env` ファイルを作成（`.gitignore` に含まれています）
-
-```
-VITE_OPENAI_KEY=sk-XXXXXXXXXX
-VITE_SHEETS_URL=https://script.google.com/...
-```
-
-2. `src/api.js` で参照
-
-```js
-export const CFG = {
-  openaiKey: import.meta.env.VITE_OPENAI_KEY || '',
-  sheetsUrl: import.meta.env.VITE_SHEETS_URL || '',
-  demoMode: !import.meta.env.VITE_OPENAI_KEY,
-}
-```
-
-3. GitHub Actions に Secrets を追加  
-   **Settings → Secrets and variables → Actions → New repository secret**
-
-4. `deploy.yml` の Build ステップに環境変数を追加
-
-```yaml
-- name: Build
-  run: npm run build
-  env:
-    VITE_OPENAI_KEY: ${{ secrets.VITE_OPENAI_KEY }}
-    VITE_SHEETS_URL: ${{ secrets.VITE_SHEETS_URL }}
-```
+- 氏名・メールアドレス・電話番号・学籍番号・住所は**一切取得しません**
+- 同意チェックがない場合はデータを保存しません
+- APIキー・シークレットはコードに含まれません（環境変数で管理）
 
 ---
 
@@ -175,21 +130,38 @@ export const CFG = {
 
 ```
 career-compass/
-├── .github/
-│   └── workflows/
-│       └── deploy.yml       # GitHub Actions 自動デプロイ
 ├── src/
-│   ├── main.js              # アプリ起動・状態管理・全画面レンダリング
-│   ├── style.css            # 全スタイル
-│   ├── data.js              # 質問データ・選択肢・軸メタ情報
-│   ├── scoring.js           # スコア計算・パターン判定
-│   ├── patterns.js          # 8パターンのフィードバックデータ
-│   ├── api.js               # 外部API連携（Sheets / OpenAI）★後から追加
-│   └── chart.js             # レーダーチャート & 3Dマップ
-├── index.html               # エントリーポイント
-├── vite.config.js           # Vite 設定
-├── package.json
-└── README.md
+│   ├── types/
+│   │   └── index.ts          # 型定義
+│   ├── data/
+│   │   ├── questions.ts      # 質問データ・軸メタ情報
+│   │   └── patterns.ts       # 8パターンのフィードバックデータ
+│   ├── utils/
+│   │   └── scoring.ts        # スコア計算・パターン判定
+│   ├── api/
+│   │   └── index.ts          # 外部API連携（Sheets / OpenAI）
+│   ├── context/
+│   │   └── AppContext.tsx     # グローバル状態管理（useReducer）
+│   ├── components/
+│   │   ├── Landing.tsx        # トップ画面
+│   │   ├── BasicInfo.tsx      # 基本情報入力
+│   │   ├── LightQuiz.tsx      # ライト診断（20問）
+│   │   ├── Results.tsx        # 結果画面（深度・解像度を中心に表示）
+│   │   ├── DetailQuiz.tsx     # 詳細診断（25問）
+│   │   ├── Report.tsx         # 詳細レポート
+│   │   ├── RadarChart.tsx     # レーダーチャート（Chart.js）
+│   │   └── DepthMap.tsx       # 等角投影3Dマップ（Canvas API）
+│   ├── App.tsx                # 画面ルーティング
+│   ├── main.tsx               # エントリーポイント
+│   ├── index.css              # デザインシステム・トークン
+│   └── vite-env.d.ts          # Vite型宣言
+├── index.html
+├── vite.config.ts
+├── vercel.json
+├── tsconfig.json
+├── tsconfig.app.json
+├── tsconfig.node.json
+└── package.json
 ```
 
 ---
