@@ -3,9 +3,10 @@ import { useApp } from '../context/AppContext'
 import { DQ, SCALE_LABELS } from '../data/questions'
 import { generateReport, saveResponse, buildSavePayload } from '../api/index'
 import { recommendStrategy, gradeToNum } from '../utils/scoring'
-import type { FreeText } from '../types'
+import ExperienceTagScreen from './ExperienceTag'
+import type { FreeText, ExperienceTags, CustomExperiences } from '../types'
 
-type Phase = 'quiz' | 'freetext' | 'loading'
+type Phase = 'quiz' | 'tags' | 'freetext' | 'loading'
 
 const FREE_TEXT_QUESTIONS = [
   {
@@ -30,18 +31,25 @@ export default function DetailQuiz() {
   const [phase, setPhase] = useState<Phase>('quiz')
   const [current, setCurrent] = useState(0)
   const [freeText, setFreeText] = useState<FreeText>(state.freeText)
+  const [expTags, setExpTags] = useState<ExperienceTags>(state.experienceTags)
+  const [expCustom, setExpCustom] = useState<CustomExperiences>(state.customExperiences)
+
   const answers = state.detailAnswers
   const total = DQ.length
   const q = DQ[current]
   const selected = answers[current]
 
-  async function finishAndGenerate(ft: FreeText) {
+  async function finishAndGenerate(ft: FreeText, tags: ExperienceTags, custom: CustomExperiences) {
     setPhase('loading')
     dispatch({ type: 'SET_FREE_TEXT', freeText: ft })
+    dispatch({ type: 'SET_EXPERIENCE_TAGS', tags, custom })
 
     const scores = state.scores!
     const gradeNum = gradeToNum(state.basicInfo.grade)
-    const { axis: recAxis } = recommendStrategy(scores, gradeNum)
+    const { axis: recAxis, mode: recMode } = recommendStrategy(scores, gradeNum)
+
+    // Flatten custom experience values
+    const customList = Object.values(custom).filter(v => v.trim())
 
     let report = ''
     try {
@@ -50,6 +58,8 @@ export default function DetailQuiz() {
         status: state.basicInfo.status,
         scores,
         freeText: ft,
+        experienceTags: tags,
+        customExperiences: customList,
       })
       dispatch({ type: 'SET_REPORT', report })
     } catch {
@@ -57,7 +67,7 @@ export default function DetailQuiz() {
       dispatch({ type: 'SET_REPORT', report })
     }
 
-    // Save to Sheets (non-blocking, only if consented)
+    // Save to Sheets (fire-and-forget, only if consented)
     if (state.consentResearch) {
       const payload = buildSavePayload(
         state.basicInfo,
@@ -65,36 +75,36 @@ export default function DetailQuiz() {
         state.lightAnswers,
         state.detailAnswers,
         ft,
+        tags,
+        customList,
         scores,
         recAxis,
+        recMode,
         report,
       )
-      saveResponse(payload) // fire-and-forget
+      saveResponse(payload)
     }
 
     dispatch({ type: 'GO', screen: 'report' })
   }
 
-  async function selectAnswer(val: number) {
+  function selectAnswer(val: number) {
     dispatch({ type: 'SET_DETAIL_ANSWER', idx: current, value: val })
     if (current < total - 1) {
       setTimeout(() => setCurrent(current + 1), 180)
     } else {
-      // Move to free text phase
-      setPhase('freetext')
+      setPhase('tags')
     }
   }
 
   function goBack() {
-    if (phase === 'freetext') {
-      setPhase('quiz')
-      setCurrent(total - 1)
-      return
-    }
+    if (phase === 'freetext') { setPhase('tags'); return }
+    if (phase === 'tags') { setPhase('quiz'); setCurrent(total - 1); return }
     if (current > 0) setCurrent(current - 1)
     else dispatch({ type: 'GO', screen: 'results' })
   }
 
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (phase === 'loading') {
     return (
       <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -106,6 +116,23 @@ export default function DetailQuiz() {
     )
   }
 
+  // ── Experience tag selection ───────────────────────────────────────────────
+  if (phase === 'tags') {
+    return (
+      <ExperienceTagScreen
+        initialTags={expTags}
+        initialCustom={expCustom}
+        onBack={() => { setPhase('quiz'); setCurrent(total - 1) }}
+        onNext={(tags, custom) => {
+          setExpTags(tags)
+          setExpCustom(custom)
+          setPhase('freetext')
+        }}
+      />
+    )
+  }
+
+  // ── Free text ──────────────────────────────────────────────────────────────
   if (phase === 'freetext') {
     return (
       <div className="page">
@@ -125,7 +152,7 @@ export default function DetailQuiz() {
           <div className="fade-in">
             <span className="caption" style={{ display: 'block', marginBottom: 8, color: 'var(--text-3)' }}>自由記述（任意）</span>
             <p className="body" style={{ marginBottom: 36 }}>
-              以下の3問は任意です。回答することで、あなた専用の個別フィードバックが大幅に精度が上がります。スキップしてもレポートは生成されます。
+              回答することで、あなた専用の個別フィードバック精度が大幅に上がります。スキップしてもレポートは生成されます。
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
               {FREE_TEXT_QUESTIONS.map(({ key, label, placeholder }) => (
@@ -161,7 +188,7 @@ export default function DetailQuiz() {
             <button
               className="btn btn--primary btn--full"
               style={{ height: 52, marginTop: 40 }}
-              onClick={() => finishAndGenerate(freeText)}
+              onClick={() => finishAndGenerate(freeText, expTags, expCustom)}
             >
               フィードバックを生成する
             </button>
@@ -171,6 +198,7 @@ export default function DetailQuiz() {
     )
   }
 
+  // ── Quiz ───────────────────────────────────────────────────────────────────
   return (
     <div className="page">
       <div style={{ width: '100%', background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 10 }}>

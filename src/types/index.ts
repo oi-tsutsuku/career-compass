@@ -38,6 +38,18 @@ export interface FreeText {
   interview: string
 }
 
+/**
+ * Selected experience tag IDs (flat list of tag labels).
+ * Custom "その他" entries are stored separately in customExperiences.
+ */
+export type ExperienceTags = string[]
+
+/**
+ * Free-text entries for "その他" tags.
+ * Key = the "その他XXX" tag label, value = user input.
+ */
+export type CustomExperiences = Record<string, string>
+
 export interface LightQuestion {
   text: string
   axis: Axis
@@ -70,6 +82,8 @@ export interface AppState {
   lightAnswers: number[]
   detailAnswers: (number | null)[]
   freeText: FreeText
+  experienceTags: ExperienceTags
+  customExperiences: CustomExperiences
   scores: Scores | null
   pattern: PatternId | null
   report: string

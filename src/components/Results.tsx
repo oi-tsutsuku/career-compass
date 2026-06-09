@@ -103,7 +103,7 @@ export default function Results() {
         <div className="container">
           <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginBottom: 40 }}>
             <div className="card">
-              <h3 className="title" style={{ marginBottom: 16 }}>面接で語れそうな材料</h3>
+              <h3 className="title" style={{ marginBottom: 16 }}>面接で語れそうな経験テーマ</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {pattern.strengths.map(s => (
                   <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

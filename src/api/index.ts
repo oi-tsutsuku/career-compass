@@ -5,28 +5,42 @@ export interface ReportPayload {
   status: string
   scores: Scores
   freeText: FreeText
+  experienceTags: string[]
+  customExperiences: string[]
   answerTendency?: string
 }
 
 export interface SavePayload {
   submitted_at: string
   grade: string
-  job_hunting_status: string
+  status: string
   university: string
   faculty: string
   consent_research_use: boolean
-  light_answers: string
-  detail_answers: string
+  // Scores
+  self_score: number
+  social_score: number
+  action_score: number
+  decision_score: number
+  depth_score: number
+  total_score: number
+  // Strategy
+  recommended_mode: string
+  recommended_axis: string
+  // Experience
+  experience_tags: string
+  custom_experiences: string
+  // Free text
   free_text_growth: string
   free_text_concern: string
   free_text_interview: string
-  self_understanding_score: number
-  social_exploration_score: number
-  action_score: number
-  decision_score: number
-  resolution_depth_score: number
-  recommended_next_axis: string
+  // Output
   generated_report_text: string
+  // Optional metadata
+  detail_completed: boolean
+  // Legacy compatibility
+  light_answers: string
+  detail_answers: string
 }
 
 export function buildSavePayload(
@@ -35,31 +49,72 @@ export function buildSavePayload(
   lightAnswers: number[],
   detailAnswers: (number | null)[],
   freeText: FreeText,
+  experienceTags: string[],
+  customExperiences: string[],
   scores: Scores,
-  recommendedNextAxis: string,
+  recommendedAxis: string,
+  recommendedMode: string,
   report: string,
 ): SavePayload {
+  const total = Math.round(
+    (scores.self + scores.social + scores.action + scores.decision + scores.depth) / 5
+  )
   return {
     submitted_at: new Date().toISOString(),
     grade: basicInfo.grade,
-    job_hunting_status: basicInfo.status,
+    status: basicInfo.status,
     university: '',
     faculty: '',
     consent_research_use: consentResearch,
-    light_answers: lightAnswers.join(','),
-    detail_answers: detailAnswers.map(a => a ?? '').join(','),
+    self_score: scores.self,
+    social_score: scores.social,
+    action_score: scores.action,
+    decision_score: scores.decision,
+    depth_score: scores.depth,
+    total_score: total,
+    recommended_mode: recommendedMode,
+    recommended_axis: recommendedAxis,
+    experience_tags: experienceTags.join(','),
+    custom_experiences: customExperiences.join(','),
     free_text_growth: freeText.growth,
     free_text_concern: freeText.concern,
     free_text_interview: freeText.interview,
-    self_understanding_score: scores.self,
-    social_exploration_score: scores.social,
-    action_score: scores.action,
-    decision_score: scores.decision,
-    resolution_depth_score: scores.depth,
-    recommended_next_axis: recommendedNextAxis,
     generated_report_text: report,
+    detail_completed: true,
+    light_answers: lightAnswers.join(','),
+    detail_answers: detailAnswers.map(a => a ?? '').join(','),
   }
 }
+
+// ─── Demo fallback ─────────────────────────────────────────────────────────────
+
+const DEMO_REPORT = `①現在地の解釈
+あなたは現在、自分の内側に向き合う力を持ちながらも、経験を言葉にする「深度・解像度」をさらに高めていける段階にいます。
+
+②根拠
+スコアの構成から、経験の蓄積よりも「その経験をどう語るか」の精度を上げることが次の一歩と読み取れます。
+
+③面接で語れそうな経験テーマ
+
+【テーマ1】自分なりに状況を読み、動いた経験
+なぜ語れるのか：日常の中での関わりや工夫の積み重ねが、面接での「どう考え、どう動いたか」という話に変換できる可能性があります。
+面接での使い方：「主体性があります」ではなく、「こういう状況で、自分はこう判断してこう動いた」という具体的な場面を話すと伝わりやすくなります。
+
+【テーマ2】誰かの役に立った・支えた経験
+なぜ語れるのか：人との関わりの中で、相手の状況を見て動いた経験は「相手の立場に立てる人」として伝わる素材になります。
+面接での使い方：「協調性があります」ではなく、「この人が困っていると気づいて、自分はこうした」という経緯を話す形にすると具体性が出ます。
+
+【テーマ3】続けてきた・やり切った経験
+なぜ語れるのか：継続してきたことには必ず「やめたくなった瞬間」があります。そこをどう乗り越えたかが、面接で差がつく話になります。
+面接での使い方：「継続力があります」ではなく、「〜という状況で迷ったが、こう考えて続けた」という場面を話すと伝わりやすくなります。
+
+④推奨行動（モード: 深める）
+この1ヶ月で試してほしいこと：①最も印象に残った経験を1つ選び「状況→行動→結果→感じたこと→学び」の順で書き出す。②その内容を誰かに口頭で話してみて、どこで詰まるかを確認する。
+
+⑤学年との比較
+同学年の学生と比べると、自己理解の基盤はしっかりしています。あとは「社会との接点」を意識的に増やすことで、スコア全体のバランスが一段上がります。`
+
+// ─── API calls ────────────────────────────────────────────────────────────────
 
 export async function generateReport(payload: ReportPayload): Promise<string> {
   try {
@@ -87,18 +142,3 @@ export async function saveResponse(data: SavePayload): Promise<void> {
     console.log('保存スキップ')
   }
 }
-
-const DEMO_REPORT = `①現在地の解釈
-あなたは現在、自分の内側に向き合う力を持ちながらも、経験を言葉にする「深度・解像度」をさらに高めていける段階にいます。焦らず、自分のペースで整理していきましょう。
-
-②根拠
-スコアの構成から、経験の蓄積よりも「その経験をどう語るか」の精度を上げることが次の一歩と読み取れます。自由記述に書いてくれた内容には、すでに面接で使えるエピソードの素材が含まれています。
-
-③面接で語れそうな材料
-日常のなかで感じた小さな変化や気づきは、「自己認識力」として面接で話せる可能性があります。「なぜそう感じたか」まで掘り下げることで、あなただけの言葉が生まれます。
-
-④推奨行動
-この1ヶ月で試してほしいこと：①最も印象に残った経験を1つ選び「状況→行動→結果→感じたこと→学び」の順で書き出す。②社会探索として、OB・OG訪問を1件設定し、業界の実態を自分の言葉で説明できるようにする。
-
-⑤学年との比較
-同学年の学生と比べると、自己理解の基盤はしっかりしています。あとは「社会との接点」を意識的に増やすことで、スコア全体のバランスが一段上がります。`
