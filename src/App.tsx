@@ -8,7 +8,6 @@ import Report from './components/Report'
 
 export default function App() {
   const { state } = useApp()
-
   switch (state.screen) {
     case 'landing':    return <Landing />
     case 'basicInfo':  return <BasicInfo />

@@ -1,13 +1,11 @@
+// このファイルは vite.config.ts に移行済みです。
+// Vite は .ts を優先しますが、念のため base を '/' に修正しています。
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-// ── GitHub Pages 向け設定 ──────────────────────────────────────
-// プロジェクトページ (username.github.io/career-compass/) の場合
-//   → base: '/career-compass/'  ← 絶対パスで確実に動く
-// ユーザー/組織ページ (username.github.io) の場合
-//   → base: '/'
-// ─────────────────────────────────────────────────────────────
+// Vercel 用: base は '/' (デフォルト)
 export default defineConfig({
-  base: '/career-compass/',
+  plugins: [react()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,

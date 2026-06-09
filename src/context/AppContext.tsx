@@ -3,19 +3,17 @@ import type { ReactNode } from 'react'
 import type { AppState, Screen, BasicInfo, PatternId, Scores } from '../types'
 import { LQ, DQ } from '../data/questions'
 
-// ── Initial state ─────────────────────────────────────────────────
 const initial: AppState = {
   screen: 'landing',
   basicInfo: { grade: '', status: '', area: '' },
-  lightAnswers: Array(LQ.length).fill(0),
-  detailAnswers: Array(DQ.length).fill(null),
+  lightAnswers: Array(LQ.length).fill(0) as number[],
+  detailAnswers: Array(DQ.length).fill(null) as (number | null)[],
   scores: null,
   pattern: null,
   report: '',
   consent: false,
 }
 
-// ── Actions ───────────────────────────────────────────────────────
 type Action =
   | { type: 'GO'; screen: Screen }
   | { type: 'SET_BASIC'; info: BasicInfo }
@@ -55,12 +53,7 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
-// ── Context ───────────────────────────────────────────────────────
-interface Ctx {
-  state: AppState
-  dispatch: React.Dispatch<Action>
-}
-
+interface Ctx { state: AppState; dispatch: React.Dispatch<Action> }
 const AppCtx = createContext<Ctx | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
