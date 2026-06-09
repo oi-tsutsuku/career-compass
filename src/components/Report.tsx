@@ -1,6 +1,7 @@
 import { useApp } from '../context/AppContext'
 import { PATTERNS } from '../data/patterns'
 import { AXIS_META } from '../data/questions'
+import ShareActions from './ShareActions'
 
 const AXES = ['depth', 'self', 'social', 'action', 'decision'] as const
 
@@ -141,7 +142,7 @@ export default function Report() {
   return (
     <div className="page">
       {/* Nav */}
-      <div style={{ width: '100%', background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '20px 0' }}>
+      <div className="no-print" style={{ width: '100%', background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '20px 0' }}>
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button className="btn btn--ghost" style={{ padding: '0 8px', fontSize: '0.875rem' }} onClick={() => dispatch({ type: 'GO', screen: 'results' })}>← 診断結果へ</button>
           <span style={{ fontWeight: 700, fontSize: '0.9375rem' }}>詳細レポート</span>
@@ -197,6 +198,9 @@ export default function Report() {
           </div>
         </div>
       </div>
+
+      {/* Share actions */}
+      <ShareActions scores={scores} patternId={patternId} grade={basicInfo.grade} report={report} />
 
       {/* AI Feedback sections */}
       {report && (

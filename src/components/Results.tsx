@@ -4,6 +4,7 @@ import { AXIS_META } from '../data/questions'
 import { gradeToNum, recommendNextAxis } from '../utils/scoring'
 import RadarChart from './RadarChart'
 import DepthMap from './DepthMap'
+import ShareActions from './ShareActions'
 
 const AXES = ['depth', 'self', 'social', 'action', 'decision'] as const
 
@@ -49,6 +50,9 @@ export default function Results() {
           </div>
         </div>
       </div>
+
+      {/* Share actions */}
+      <ShareActions scores={scores} patternId={patternId} grade={basicInfo.grade} />
 
       {/* All axes */}
       <div style={{ width: '100%', padding: '48px 0' }}>
@@ -136,7 +140,7 @@ export default function Results() {
       </div>
 
       {/* CTA */}
-      <div style={{ width: '100%', padding: '48px 0', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
+      <div className="no-print" style={{ width: '100%', padding: '48px 0', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
         <div className="container" style={{ textAlign: 'center' }}>
           <h2 className="headline" style={{ marginBottom: 12 }}>さらに詳しく知る</h2>
           <p className="body" style={{ marginBottom: 32, maxWidth: 480, margin: '0 auto 32px' }}>

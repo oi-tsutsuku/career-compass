@@ -137,3 +137,37 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .depth-hero .score-number { font-size: 4rem; }
   .ab-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Print / PDF ─────────────────────────────────────────── */
+@media print {
+  /* Hide interactive chrome */
+  .no-print,
+  nav,
+  .btn,
+  .progress-bar,
+  .canvas-wrap { display: none !important; }
+
+  /* Reset layout for paper */
+  body, #root { background: #fff !important; }
+  .page { min-height: unset !important; padding-bottom: 0 !important; }
+
+  /* Expand all sections */
+  .container, .container--wide {
+    max-width: 100% !important;
+    padding: 0 24px !important;
+  }
+
+  /* Cards */
+  .card, .card--sm {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  /* Score bars: ensure colors print */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  /* Page breaks */
+  h2.title { break-before: avoid; }
+  .depth-hero { break-after: avoid; }
+}
