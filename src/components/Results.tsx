@@ -13,8 +13,9 @@ export default function Results() {
   if (!scores || !patternId) return null
 
   const pattern = PATTERNS[patternId]
-  const hl = pattern.hl(gradeToNum(basicInfo.grade))
-  const recAxis = recommendNextAxis(scores)
+  const gradeNum = gradeToNum(basicInfo.grade)
+  const hl = pattern.hl(gradeNum)
+  const recAxis = recommendNextAxis(scores, gradeNum)
   const depthLevel = scores.depth >= 70 ? '高い' : scores.depth >= 45 ? '中程度' : '伸ばせる余地あり'
 
   return (

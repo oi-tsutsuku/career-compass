@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { DQ, SCALE_LABELS } from '../data/questions'
 import { generateReport, saveResponse, buildSavePayload } from '../api/index'
-import { recommendNextAxis } from '../utils/scoring'
+import { recommendStrategy, gradeToNum } from '../utils/scoring'
 import type { FreeText } from '../types'
 
 type Phase = 'quiz' | 'freetext' | 'loading'
@@ -40,7 +40,8 @@ export default function DetailQuiz() {
     dispatch({ type: 'SET_FREE_TEXT', freeText: ft })
 
     const scores = state.scores!
-    const recAxis = recommendNextAxis(scores)
+    const gradeNum = gradeToNum(state.basicInfo.grade)
+    const { axis: recAxis } = recommendStrategy(scores, gradeNum)
 
     let report = ''
     try {
