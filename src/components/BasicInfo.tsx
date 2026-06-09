@@ -7,7 +7,8 @@ export default function BasicInfoScreen() {
   const { state, dispatch } = useApp()
   const [info, setInfo] = useState<BasicInfo>(state.basicInfo)
   const [consent, setConsent] = useState(state.consent)
-  const valid = info.grade && info.status && info.area && consent
+  const [consentResearch, setConsentResearch] = useState(state.consentResearch)
+  const valid = info.grade && info.status && info.area && consent && consentResearch
 
   return (
     <div className="page">
@@ -57,9 +58,13 @@ export default function BasicInfoScreen() {
                 <strong style={{ color: 'var(--text)' }}>プライバシーについて</strong><br />
                 氏名・メールアドレス・学籍番号などの個人を特定できる情報は一切取得しません。回答データは就活支援の改善目的にのみ使用し、第三者に提供しません。
               </p>
-              <label className="checkbox-label">
+              <label className="checkbox-label" style={{ marginBottom: 10 }}>
                 <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
                 <span>上記のプライバシーポリシーに同意します</span>
+              </label>
+              <label className="checkbox-label">
+                <input type="checkbox" checked={consentResearch} onChange={e => setConsentResearch(e.target.checked)} />
+                <span>回答データを研究・サービス改善・新機能開発に活用することに同意します</span>
               </label>
             </div>
 
@@ -71,6 +76,7 @@ export default function BasicInfoScreen() {
                 if (!valid) return
                 dispatch({ type: 'SET_BASIC', info })
                 dispatch({ type: 'SET_CONSENT', value: consent })
+                dispatch({ type: 'SET_CONSENT_RESEARCH', value: consentResearch })
                 dispatch({ type: 'GO', screen: 'lightQuiz' })
               }}
             >

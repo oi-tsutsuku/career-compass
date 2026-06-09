@@ -1,7 +1,7 @@
 import { useApp } from '../context/AppContext'
 import { PATTERNS } from '../data/patterns'
 import { AXIS_META } from '../data/questions'
-import { gradeToNum } from '../utils/scoring'
+import { gradeToNum, recommendNextAxis } from '../utils/scoring'
 import RadarChart from './RadarChart'
 import DepthMap from './DepthMap'
 
@@ -14,6 +14,7 @@ export default function Results() {
 
   const pattern = PATTERNS[patternId]
   const hl = pattern.hl(gradeToNum(basicInfo.grade))
+  const recAxis = recommendNextAxis(scores)
   const depthLevel = scores.depth >= 70 ? '高い' : scores.depth >= 45 ? '中程度' : '伸ばせる余地あり'
 
   return (
@@ -92,7 +93,7 @@ export default function Results() {
         <div className="container container--wide">
           <h2 className="title" style={{ marginBottom: 8 }}>現在地マップ</h2>
           <p className="small" style={{ marginBottom: 24 }}>X軸＝自己理解、Y軸＝社会探索、高さ＝<strong>深度・解像度</strong></p>
-          <DepthMap scores={scores} />
+          <DepthMap scores={scores} recommendedAxis={recAxis} />
         </div>
       </div>
 
@@ -101,7 +102,7 @@ export default function Results() {
         <div className="container">
           <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginBottom: 40 }}>
             <div className="card">
-              <h3 className="title" style={{ marginBottom: 16 }}>面接で活かせる強み</h3>
+              <h3 className="title" style={{ marginBottom: 16 }}>面接で語れそうな材料</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {pattern.strengths.map(s => (
                   <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

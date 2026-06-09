@@ -32,6 +32,12 @@ export interface BasicInfo {
   area: string
 }
 
+export interface FreeText {
+  growth: string
+  concern: string
+  interview: string
+}
+
 export interface LightQuestion {
   text: string
   axis: Axis
@@ -63,8 +69,10 @@ export interface AppState {
   basicInfo: BasicInfo
   lightAnswers: number[]
   detailAnswers: (number | null)[]
+  freeText: FreeText
   scores: Scores | null
   pattern: PatternId | null
   report: string
   consent: boolean
+  consentResearch: boolean
 }

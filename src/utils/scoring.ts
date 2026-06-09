@@ -1,4 +1,4 @@
-import type { Scores, PatternId } from '../types'
+import type { Scores, PatternId, Axis } from '../types'
 import { LQ } from '../data/questions'
 
 export function calcScores(answers: number[]): Scores {
@@ -24,6 +24,12 @@ export function determinePattern(sc: Scores): PatternId {
   if (s >= 60 && e >= 60 && a >= 58 && dep >= 58 && d < 52)    return 'predecision'
   if (s >= 65 && e < 48)                                        return 'selffocused'
   return 'balanced'
+}
+
+export function recommendNextAxis(scores: Scores): Axis {
+  if (scores.depth < 55) return 'depth'
+  const others: Axis[] = ['self', 'social', 'action', 'decision']
+  return others.reduce((min, ax) => scores[ax] < scores[min] ? ax : min)
 }
 
 export function gradeToNum(grade: string): number {

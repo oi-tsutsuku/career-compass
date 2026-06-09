@@ -1,7 +1,23 @@
 import { useEffect, useRef } from 'react'
-import type { Scores } from '../types'
+import type { Scores, Axis } from '../types'
+import { AXIS_META } from '../data/questions'
 
-export default function DepthMap({ scores }: { scores: Scores }) {
+interface Props {
+  scores: Scores
+  recommendedAxis?: Axis
+}
+
+// How far to project in the recommended direction (0-100 units)
+const DIRECTION_DELTA = 22
+
+function getTargetScores(scores: Scores, axis: Axis): Scores {
+  const target = { ...scores }
+  const projected = Math.min(100, scores[axis] + DIRECTION_DELTA)
+  target[axis] = projected
+  return target
+}
+
+export default function DepthMap({ scores, recommendedAxis }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -65,6 +81,47 @@ export default function DepthMap({ scores }: { scores: Scores }) {
     ctx.save(); ctx.translate(zm.x - 28, zm.y); ctx.rotate(-Math.PI / 2)
     ctx.fillText('深度・解像度', -40, 0); ctx.restore()
 
+    // --- Recommended direction ---
+    if (recommendedAxis) {
+      const target = getTargetScores(scores, recommendedAxis)
+      const fromTop = iso(scores.self, scores.social, scores.depth)
+      const toTop   = iso(target.self, target.social, target.depth)
+
+      // Dashed line from current to target
+      ctx.beginPath()
+      ctx.moveTo(fromTop.x, fromTop.y)
+      ctx.lineTo(toTop.x, toTop.y)
+      ctx.strokeStyle = 'rgba(37,99,235,0.55)'
+      ctx.lineWidth = 2
+      ctx.setLineDash([5, 4])
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // Arrowhead at target
+      const angle = Math.atan2(toTop.y - fromTop.y, toTop.x - fromTop.x)
+      const alen = 8
+      ctx.beginPath()
+      ctx.moveTo(toTop.x, toTop.y)
+      ctx.lineTo(toTop.x - alen * Math.cos(angle - 0.45), toTop.y - alen * Math.sin(angle - 0.45))
+      ctx.lineTo(toTop.x - alen * Math.cos(angle + 0.45), toTop.y - alen * Math.sin(angle + 0.45))
+      ctx.closePath()
+      ctx.fillStyle = 'rgba(37,99,235,0.8)'
+      ctx.fill()
+
+      // Target dot (hollow)
+      ctx.beginPath(); ctx.arc(toTop.x, toTop.y, 5, 0, Math.PI * 2)
+      ctx.fillStyle = '#fff'
+      ctx.strokeStyle = 'rgba(37,99,235,0.9)'
+      ctx.lineWidth = 2
+      ctx.fill(); ctx.stroke()
+
+      // Label
+      const recMeta = AXIS_META[recommendedAxis]
+      ctx.font = "600 11px 'Noto Sans JP', sans-serif"
+      ctx.fillStyle = 'rgba(37,99,235,0.9)'
+      ctx.fillText(`▲ ${recMeta.label}を伸ばす`, toTop.x + 9, toTop.y - 4)
+    }
+
     // User pillar
     const bot = iso(scores.self, scores.social, 0)
     const top = iso(scores.self, scores.social, scores.depth)
@@ -83,7 +140,7 @@ export default function DepthMap({ scores }: { scores: Scores }) {
     ctx.beginPath(); ctx.arc(top.x, top.y, 16, 0, Math.PI * 2)
     ctx.fillStyle = grad; ctx.fill()
 
-    // Dot
+    // Dot (current position)
     ctx.beginPath(); ctx.arc(top.x, top.y, 7, 0, Math.PI * 2)
     ctx.fillStyle = '#0F172A'; ctx.fill()
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke()
@@ -92,7 +149,7 @@ export default function DepthMap({ scores }: { scores: Scores }) {
     ctx.font = "700 12px 'Noto Sans JP', sans-serif"
     ctx.fillStyle = '#0F172A'
     ctx.fillText(`深度 ${scores.depth}`, top.x + 11, top.y - 6)
-  }, [scores])
+  }, [scores, recommendedAxis])
 
   return (
     <div className="canvas-wrap">

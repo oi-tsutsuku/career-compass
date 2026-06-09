@@ -4,11 +4,45 @@ import { AXIS_META } from '../data/questions'
 
 const AXES = ['depth', 'self', 'social', 'action', 'decision'] as const
 
+// Split the ①〜⑤ structured report into sections
+function parseSections(text: string): { heading: string; body: string }[] {
+  const markers = ['①', '②', '③', '④', '⑤']
+  const sections: { heading: string; body: string }[] = []
+
+  for (let i = 0; i < markers.length; i++) {
+    const start = text.indexOf(markers[i])
+    if (start === -1) continue
+    const end = i < markers.length - 1 ? text.indexOf(markers[i + 1]) : text.length
+    const chunk = text.slice(start + markers[i].length, end === -1 ? text.length : end).trim()
+    const newline = chunk.indexOf('\n')
+    if (newline !== -1) {
+      sections.push({ heading: markers[i] + chunk.slice(0, newline).trim(), body: chunk.slice(newline + 1).trim() })
+    } else {
+      sections.push({ heading: markers[i], body: chunk })
+    }
+  }
+
+  // If no markers found (e.g. demo mode or plain text), return as-is
+  if (sections.length === 0) {
+    return [{ heading: '', body: text }]
+  }
+  return sections
+}
+
+const SECTION_COLORS = [
+  'var(--depth)',
+  'var(--accent)',
+  '#059669',
+  '#d97706',
+  '#7c3aed',
+]
+
 export default function Report() {
   const { state, dispatch } = useApp()
   const { scores, pattern: patternId, report, basicInfo } = state
   if (!scores || !patternId) return null
   const pattern = PATTERNS[patternId]
+  const sections = parseSections(report)
 
   return (
     <div className="page">
@@ -69,9 +103,18 @@ export default function Report() {
       {report && (
         <div style={{ width: '100%', padding: '40px 0' }}>
           <div className="container">
-            <h2 className="title" style={{ marginBottom: 16 }}>個別フィードバック</h2>
-            <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
-              <p style={{ fontSize: '0.9375rem', lineHeight: 1.85, whiteSpace: 'pre-line' }}>{report}</p>
+            <h2 className="title" style={{ marginBottom: 20 }}>個別フィードバック</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {sections.map((sec, i) => (
+                <div key={i} className="card" style={{ borderLeft: `3px solid ${SECTION_COLORS[i] ?? 'var(--border-md)'}` }}>
+                  {sec.heading && (
+                    <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: SECTION_COLORS[i] ?? 'var(--text-3)', marginBottom: 8, letterSpacing: '0.02em' }}>
+                      {sec.heading}
+                    </p>
+                  )}
+                  <p style={{ fontSize: '0.9375rem', lineHeight: 1.85, whiteSpace: 'pre-line' }}>{sec.body}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -82,7 +125,7 @@ export default function Report() {
           <h2 className="title" style={{ marginBottom: 20 }}>タイプ詳細：{pattern.name}</h2>
           <div style={{ display: 'grid', gap: 20 }}>
             <div className="card card--sm">
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: 12, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>強み</h3>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: 12, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>面接で語れそうな材料</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {pattern.strengths.map(s => (
                   <span key={s} className="tag" style={{ fontWeight: 600, color: 'var(--text)' }}>{s}</span>

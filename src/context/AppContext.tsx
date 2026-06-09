@@ -1,25 +1,31 @@
 import { createContext, useContext, useReducer } from 'react'
 import type { ReactNode } from 'react'
-import type { AppState, Screen, BasicInfo, PatternId, Scores } from '../types'
+import type { AppState, Screen, BasicInfo, PatternId, Scores, FreeText } from '../types'
 import { LQ, DQ } from '../data/questions'
+
+const INITIAL_FREE_TEXT: FreeText = { growth: '', concern: '', interview: '' }
 
 const initial: AppState = {
   screen: 'landing',
   basicInfo: { grade: '', status: '', area: '' },
   lightAnswers: Array(LQ.length).fill(0) as number[],
   detailAnswers: Array(DQ.length).fill(null) as (number | null)[],
+  freeText: INITIAL_FREE_TEXT,
   scores: null,
   pattern: null,
   report: '',
   consent: false,
+  consentResearch: false,
 }
 
 type Action =
   | { type: 'GO'; screen: Screen }
   | { type: 'SET_BASIC'; info: BasicInfo }
   | { type: 'SET_CONSENT'; value: boolean }
+  | { type: 'SET_CONSENT_RESEARCH'; value: boolean }
   | { type: 'SET_LIGHT_ANSWER'; idx: number; value: number }
   | { type: 'SET_DETAIL_ANSWER'; idx: number; value: number }
+  | { type: 'SET_FREE_TEXT'; freeText: FreeText }
   | { type: 'SET_RESULTS'; scores: Scores; pattern: PatternId }
   | { type: 'SET_REPORT'; report: string }
   | { type: 'RESET' }
@@ -32,6 +38,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, basicInfo: action.info }
     case 'SET_CONSENT':
       return { ...state, consent: action.value }
+    case 'SET_CONSENT_RESEARCH':
+      return { ...state, consentResearch: action.value }
     case 'SET_LIGHT_ANSWER': {
       const lightAnswers = [...state.lightAnswers]
       lightAnswers[action.idx] = action.value
@@ -42,6 +50,8 @@ function reducer(state: AppState, action: Action): AppState {
       detailAnswers[action.idx] = action.value
       return { ...state, detailAnswers }
     }
+    case 'SET_FREE_TEXT':
+      return { ...state, freeText: action.freeText }
     case 'SET_RESULTS':
       return { ...state, scores: action.scores, pattern: action.pattern }
     case 'SET_REPORT':
